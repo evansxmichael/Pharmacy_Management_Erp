@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Dashboard | Command Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            background-color: #f8f9fa; 
+        }
+        .dashboard-header { 
+            background-color: #2c3e50; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+        }
+        .alert-card { 
+            border-left: 5px solid; 
+            transition: transform 0.2s ease, box-shadow 0.2s ease; 
+        }
+        
+        /* Interactive Card Hover Effect */
+        .clickable-card:hover { 
+            transform: translateY(-4px); 
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; 
+            cursor: pointer; 
+        }
+        
+        /* Custom Border Colors */
+        .border-red { border-color: #dc3545; }
+        .border-yellow { border-color: #ffc107; }
+        .border-orange { border-color: #fd7e14; }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid mt-4 px-4">
+    
+    <div class="dashboard-header d-flex justify-content-between align-items-center shadow-sm">
+        <h2 class="mb-0"><i class="fas fa-boxes me-2"></i>Inventory Command Center</h2>
+        <div>
+            <a href="?export=po" class="btn btn-warning text-dark fw-bold shadow-sm me-2" title="Download Reorder List">
+                <i class="fas fa-file-invoice me-1"></i> Export Reorder List
+            </a>
+            <a href="{% url 'add_stock' %}" class="btn btn-success fw-bold shadow-sm me-2">
+                <i class="fas fa-plus-circle me-1"></i> Add Stock
+            </a>
+            <a href="{% url 'analytics' %}" class="btn btn-outline-light me-2">
+                <i class="fas fa-chart-line me-1"></i> Analytics
+            </a>
+            <a href="{% url 'billing' %}" class="btn btn-outline-light">
+                <i class="fas fa-cash-register me-1"></i> Go to POS
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        
+        <div class="col-md-4">
+            <div class="card alert-card border-red shadow-sm h-100 clickable-card" onclick="filterTable('expired')">
+                <div class="card-body">
+                    <h5 class="text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>Expired Batches</h5>
+                    <h2 class="mb-0">{{ expired_stock|length }}</h2>
+                    <p class="text-muted small mb-0 mt-2">Click to view expired items.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card alert-card border-yellow shadow-sm h-100 clickable-card" onclick="filterTable('expiring')">
+                <div class="card-body">
+                    <h5 class="fw-bold" style="color: #d39e00 !important;"><i class="fas fa-clock me-2"></i>Expiring in 30 Days</h5>
+                    <h2 class="mb-0">{{ expiring_soon|length }}</h2>
+                    <p class="text-muted small mb-0 mt-2">Click to view expiring batches.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card alert-card border-orange shadow-sm h-100 clickable-card" onclick="filterTable('low_stock')">
+                <div class="card-body">
+                    <h5 class="fw-bold" style="color: #fd7e14;"><i class="fas fa-arrow-down me-2"></i>Low Stock Items</h5>
+                    <h2 class="mb-0">{{ low_stock_medicines|length }}</h2>
+                    <p class="text-muted small mb-0 mt-2">Click to view items needing reorder.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-5">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0 text-secondary fw-bold d-inline-block me-3">Live Batch Tracking</h5>
+                <button id="clear-filter-btn" class="btn btn-sm btn-outline-secondary rounded-pill" style="display: none;" onclick="clearFilter()">
+                    <i class="fas fa-times me-1"></i> Clear Active Filter
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success fs-6 shadow-sm" title="Active Sellable Inventory">
+                    Active Stock Value: ₹{{ total_inventory_value|floatformat:2 }}
+                </span>
+                {% if expired_loss_value > 0 %}
+                <span class="badge bg-danger fs-6 shadow-sm" title="Depreciated Dead Stock">
+                    Expired Loss: ₹{{ expired_loss_value|floatformat:2 }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Medicine</th>
+                            <th>Batch No.</th>
+                            <th>Supplier</th>
+                            <th>Quantity</th>
+                            <th>MRP</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-tbody">
+                        {% for stock in stock_items %}
+                        <tr class="inventory-row" 
+                            data-status="{% if stock.is_expired %}expired{% elif stock.expires_soon %}expiring{% else %}healthy{% endif %}"
+                            data-low-stock="{% if stock.medicine in low_stock_medicines %}true{% else %}false{% endif %}">
+                            
+                            <td class="ps-4 fw-bold text-dark">{{ stock.medicine.name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ stock.batch_no }}</span></td>
+                            <td>{{ stock.supplier.name|default:"-" }}</td>
+                            
+                            <td class="{% if stock.medicine in low_stock_medicines %}text-danger fw-bold{% endif %}">
+                                {{ stock.quantity }}
+                            </td>
+                            
+                            <td>₹{{ stock.mrp }}</td>
+                            
+                            <td class="{% if stock.is_expired %}text-danger fw-bold{% elif stock.expires_soon %}text-warning fw-bold{% endif %}">
+                                {{ stock.expiry_date|date:"d M Y" }}
+                            </td>
+                            
+                            <td>
+                                {% if stock.is_expired %}
+                                    <span class="badge bg-danger shadow-sm">Expired</span>
+                                {% elif stock.expires_soon %}
+                                    <span class="badge bg-warning text-dark shadow-sm">Expiring Soon</span>
+                                {% else %}
+                                    <span class="badge bg-success shadow-sm">Healthy</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fas fa-box-open fa-3x mb-3 text-light"></i><br>
+                                No stock data found. Add stock to see it tracked here!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function filterTable(filterType) {
+        // 1. Show the 'Clear Filter' button so the user can reset the view
+        document.getElementById('clear-filter-btn').style.display = 'inline-block';
+        
+        // 2. Grab every row in the inventory table
+        const rows = document.querySelectorAll('.inventory-row');
+        
+        // 3. Loop through the rows and hide/show them based on the clicked card
+        rows.forEach(row => {
+            if (filterType === 'expired') {
+                row.style.display = (row.dataset.status === 'expired') ? '' : 'none';
+            } 
+            else if (filterType === 'expiring') {
+                row.style.display = (row.dataset.status === 'expiring') ? '' : 'none';
+            } 
+            else if (filterType === 'low_stock') {
+                row.style.display = (row.dataset.lowStock === 'true') ? '' : 'none';
+            }
+        });
+    }
+
+    function clearFilter() {
+        // 1. Hide the 'Clear Filter' button since no filter is active
+        document.getElementById('clear-filter-btn').style.display = 'none';
+        
+        // 2. Show all rows again
+        const rows = document.querySelectorAll('.inventory-row');
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard | Command Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            background-color: #f8f9fa; 
+        }
+        .dashboard-header { 
+            background-color: #2b3a4a; 
+            color: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid mt-4 px-4">
+    
+    <div class="dashboard-header d-flex justify-content-between align-items-center shadow-sm">
+        <h2 class="mb-0 fw-bold"><i class="fas fa-chart-line text-info me-2"></i>Financial Command Center</h2>
+        <div>
+            <a href="{% url 'billing' %}" class="btn btn-outline-light me-2">
+                <i class="fas fa-cash-register me-1"></i> Back to POS
+            </a>
+            <a href="{% url 'inventory' %}" class="btn btn-outline-light">
+                <i class="fas fa-boxes me-1"></i> Inventory Vault
+            </a>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end mb-3">
+        <span class="badge bg-success fs-6 shadow-sm"><i class="fas fa-calendar-alt me-1"></i> {{ date_label }}</span>
+    </div>
+
+    <form method="GET" class="card shadow-sm border-0 mb-4 bg-white p-3 border-start border-4 border-info">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-bold">START DATE</label>
+                <input type="date" name="start_date" class="form-control" value="{{ start_date }}" required>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label text-muted small fw-bold">END DATE</label>
+                <input type="date" name="end_date" class="form-control" value="{{ end_date }}" required>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-info text-white w-50 fw-bold shadow-sm" title="Update Charts">
+                    <i class="fas fa-filter me-1"></i> Filter
+                </button>
+                
+                <button type="submit" name="export" value="csv" class="btn btn-success text-white w-50 fw-bold shadow-sm" title="Download Excel">
+                    <i class="fas fa-file-excel me-1"></i> Export
+                </button>
+                
+                <a href="{% url 'analytics' %}" class="btn btn-outline-secondary fw-bold shadow-sm" title="Reset Dates">
+                    <i class="fas fa-redo"></i>
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white text-center p-3 mb-2 shadow-sm border-0">
+                <h6 class="text-uppercase fw-bold opacity-75 mb-1">Total Revenue</h6>
+                <h2 class="display-5 fw-bold mb-0">₹{{ todays_revenue|floatformat:2 }}</h2>
+            </div>
+            
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="card border border-success border-2 shadow-sm h-100">
+                        <div class="card-body text-center p-2">
+                            <p class="text-muted small fw-bold mb-0"><i class="fas fa-money-bill-wave text-success me-1"></i>CASH IN DRAWER</p>
+                            <h5 class="text-dark fw-bold mb-0">₹{{ total_cash }}</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card border border-primary border-2 shadow-sm h-100">
+                        <div class="card-body text-center p-2">
+                            <p class="text-muted small fw-bold mb-0"><i class="fas fa-qrcode text-primary me-1"></i>UPI / BANK</p>
+                            <h5 class="text-dark fw-bold mb-0">₹{{ total_upi }}</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 bg-success text-white h-100">
+                <div class="card-body d-flex flex-column justify-content-center align-items-center py-4">
+                    <h6 class="text-uppercase fw-bold opacity-75 mb-1">Net Profit</h6>
+                    <h2 class="display-5 fw-bold mb-0">₹{{ todays_profit|floatformat:2 }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 text-center">
+                    <h5 class="fw-bold text-secondary">Top 5 Trending Medicines</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="topSellersChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0 text-center">
+                    <h5 class="fw-bold text-secondary">Revenue Breakdown</h5>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center">
+                    <canvas id="revenueBreakdownChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div> 
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 border-top border-4 border-secondary">
+                <div class="card-header bg-white pt-4 pb-2 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-secondary mb-0"><i class="fas fa-list-alt me-2"></i>Detailed Sales Ledger</h5>
+                    <span class="badge bg-light text-dark border"><i class="fas fa-info-circle me-1"></i> Showing data for selected dates</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover table-striped align-middle mb-0" style="font-size: 0.9rem;">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th class="ps-4">Medicine Name</th>
+                                    <th class="text-center">Total Qty Sold</th>
+                                    <th class="text-end pe-4">Total Revenue Generated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in aggregated_sales %}
+                                <tr>
+                                    <td class="fw-bold text-primary ps-4">{{ item.medicine_name }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-secondary rounded-pill px-3">{{ item.total_qty_sold }}</span>
+                                    </td>
+                                    <td class="text-end text-success fw-bold pe-4">₹{{ item.total_revenue|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-5">
+                                        <i class="fas fa-receipt fa-2x mb-2 text-light"></i><br>
+                                        No sales found for this date range.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+       
+        // --- 1. Safely grab the data from Django backend ---
+        const labels = {{ chart_labels|safe }};
+        const data = {{ chart_data|safe }};
+        const revenue = parseFloat("{{ todays_revenue|default:0 }}");
+        const profit = parseFloat("{{ todays_profit|default:0 }}");
+        const cost = revenue - profit; // Calculate the baseline cost
+
+        // --- 2. Configure the Top Sellers Bar Chart ---
+        const ctxBar = document.getElementById('topSellersChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Units Sold',
+                    data: data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)', 
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    borderRadius: 6, 
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false } 
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+
+        // --- 3. Configure the Revenue Breakdown Doughnut Chart ---
+        const ctxDoughnut = document.getElementById('revenueBreakdownChart').getContext('2d');
+        new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['Net Profit', 'Total Cost'],
+                datasets: [{
+                    data: [profit, cost],
+                    backgroundColor: [
+                        'rgba(25, 135, 84, 0.8)',  // Green (Profit)
+                        'rgba(220, 53, 69, 0.8)'   // Red (Cost)
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 3,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                cutout: '70%', 
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

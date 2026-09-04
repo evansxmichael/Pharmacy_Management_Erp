@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Returns & Exchange Desk | XISHAAN PHARMACY</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            background-color: #f4f7f6; 
+        }
+        .desk-header { 
+            background-color: #d97706; 
+            color: white; 
+            padding: 18px 24px; 
+            border-radius: 8px; 
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+
+    <div class="desk-header d-flex justify-content-between align-items-center shadow-sm mb-4">
+        <div>
+            <h3 class="mb-0 fw-bold"><i class="fas fa-undo-alt me-2"></i>Returns & Exchange Desk</h3>
+            <small class="opacity-75">Scan customer receipt barcode to initiate reverse logistics</small>
+        </div>
+        <div>
+            <a href="{% url 'billing' %}" class="btn btn-outline-light fw-bold">
+                <i class="fas fa-cash-register me-1"></i> POS Counter
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show shadow-sm" role="alert">
+                <i class="fas fa-info-circle me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Barcode Scanner Input Card -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <form method="GET" action="{% url 'returns' %}">
+                <label class="form-label fw-bold text-muted small">SCAN BARCODE / ENTER BILL NO</label>
+                <div class="input-group input-group-lg shadow-sm">
+                    <span class="input-group-text bg-warning text-dark border-warning">
+                        <i class="fas fa-barcode"></i>
+                    </span>
+                    <input type="text" name="bill_no" id="billBarcodeInput" value="{{ scanned_bill_no|default:'' }}" 
+                           class="form-control border-warning" placeholder="Scan barcode printed at bottom of receipt..." 
+                           autofocus autocomplete="off" required>
+                    <button class="btn btn-warning fw-bold px-4 text-dark" type="submit">
+                        <i class="fas fa-search me-1"></i> Lookup Bill
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bill Found Record Card -->
+    {% if bill_data %}
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center py-3">
+            <div>
+                <span class="fs-5 fw-bold">Bill #{{ bill_data.bill_no }}</span>
+                <span class="badge bg-secondary ms-2">{{ bill_data.payment_method }}</span>
+            </div>
+            <div class="small">
+                <span><strong>Patient:</strong> {{ bill_data.customer.name|default:"Guest Checkout" }}</span>
+                <span class="ms-3"><strong>Date:</strong> {{ bill_data.date|date:"d M Y, H:i" }}</span>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Medicine Name</th>
+                            <th>Batch No</th>
+                            <th>Expiry</th>
+                            <th class="text-center">Sold Qty</th>
+                            <th class="text-end">Total Amount</th>
+                            <th class="text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in bill_data.items %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">{{ item.stock.medicine.name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ item.stock.batch_no }}</span></td>
+                            <td class="text-muted small">{{ item.stock.expiry_date|date:"M-y" }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-primary rounded-pill px-3">{{ item.quantity }}</span>
+                            </td>
+                            <td class="text-end fw-bold text-success">₹{{ item.total_price|floatformat:2 }}</td>
+                            <td class="text-end pe-4">
+                                {% if item.quantity > 0 %}
+                                    <button class="btn btn-sm btn-outline-danger fw-bold" data-bs-toggle="modal" data-bs-target="#returnModal{{ item.id }}">
+                                        <i class="fas fa-arrow-circle-left me-1"></i> Return Item
+                                    </button>
+                                {% else %}
+                                    <span class="badge bg-danger">Fully Refunded</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+
+                        <!-- Return Item Modal -->
+                        <div class="modal fade" id="returnModal{{ item.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <form method="POST" action="{% url 'returns' %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="sale_id" value="{{ item.id }}">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title fw-bold">
+                                                <i class="fas fa-undo-alt me-2"></i>Return {{ item.stock.medicine.name }}
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body p-4">
+                                            <div class="alert alert-light border small text-muted mb-3">
+                                                Batch: <strong>{{ item.stock.batch_no }}</strong> | Max Returnable: <strong>{{ item.quantity }} units</strong>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold small text-muted">QUANTITY TO RETURN</label>
+                                                <input type="number" name="return_qty" class="form-control form-control-lg text-center fw-bold" 
+                                                       min="1" max="{{ item.quantity }}" value="1" required>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label fw-bold small text-muted">REASON FOR RETURN</label>
+                                                <select name="reason" class="form-select" required>
+                                                    <option value="WRONG_ITEM">Wrong Item Purchased</option>
+                                                    <option value="DEFECTIVE">Damaged / Broken Seal</option>
+                                                    <option value="EXCESS">Prescription Changed / Excess</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="form-check form-switch p-3 bg-light rounded border">
+                                                <input class="form-check-input ms-0 me-2" type="checkbox" name="restock" id="restockCheck{{ item.id }}" checked>
+                                                <label class="form-check-label fw-bold" for="restockCheck{{ item.id }}">
+                                                    Restock units back to batch shelf
+                                                </label>
+                                                <div class="form-text small text-muted">Uncheck if product is damaged, opened, or discarded.</div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-danger fw-bold">Confirm & Refund</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Automatically focus the input field for USB/Bluetooth hardware barcode guns
+    document.addEventListener("DOMContentLoaded", function() {
+        const input = document.getElementById("billBarcodeInput");
+        if (input) {
+            input.focus();
+        }
+    });
+</script>
+
+</body>
+</html>

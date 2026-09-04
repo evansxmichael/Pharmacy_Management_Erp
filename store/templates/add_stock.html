@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Invoice Entry | Command Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-light">
+
+    <div class="container py-5">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-dark text-white p-3 rounded shadow-sm">
+            <h3 class="mb-0 fw-bold"><i class="fas fa-truck-loading me-2"></i> Log New Purchase Invoice</h3>
+            <div>
+                <a href="{% url 'inventory' %}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Inventory
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm border-0 mx-auto" style="max-width: 800px;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0 fw-bold"><i class="fas fa-box-open me-2"></i> Batch Details</h5>
+            </div>
+            <div class="card-body p-4">
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="POST" action="{% url 'add_stock' %}">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Select Medicine</label>
+                            <div class="input-group">
+                                <select name="medicine_id" id="medicineSelect" class="form-select" required>
+                                    <option value="" disabled selected>Choose a medicine...</option>
+                                    {% for med in medicines %}
+                                        <option value="{{ med.id }}">{{ med.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#addMedicineModal" title="Add New Medicine">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Supplier / Wholesaler</label>
+                            <div class="input-group">
+                                <select name="supplier_id" id="supplierSelect" class="form-select" required>
+                                    <option value="" disabled selected>Choose a supplier...</option>
+                                    {% for sup in suppliers %}
+                                        <option value="{{ sup.id }}">{{ sup.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-outline-success" type="button" data-bs-toggle="modal" data-bs-target="#addSupplierModal" title="Add New Supplier">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-muted">Batch Number</label>
+                            <input type="text" name="batch_no" class="form-control" placeholder="e.g., BAT-12345" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-muted">Total Quantity</label>
+                            <input type="number" name="quantity" class="form-control" placeholder="0" min="1" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold text-danger">Expiry Date</label>
+                            <input type="date" name="expiry_date" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Total Purchase Price (Cost)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" name="purchase_price" class="form-control" placeholder="0.00" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">Selling Price (MRP per unit)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" step="0.01" name="mrp" class="form-control" placeholder="0.00" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-success px-5 fw-bold">
+                            <i class="fas fa-save me-2"></i> Save to Inventory
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addMedicineModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-pills me-2"></i> Add New Medicine</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="medicineAjaxForm">
+                        {% csrf_token %}
+                        <input type="text" id="newMedName" class="form-control mb-2" placeholder="Medicine Name" required>
+                        <input type="text" id="newMedCat" class="form-control mb-2" placeholder="Category (e.g., Tablet)">
+                        <input type="text" id="newMedMfg" class="form-control mb-2" placeholder="Manufacturer">
+                        <input type="number" id="newMedMinStock" class="form-control mb-2" placeholder="Minimum Stock Level (e.g., 10)">
+                        <input type="number" id="newMedGST" class="form-control mb-2" placeholder="GST % (e.g., 12)">
+                        <input type="text" id="newMedBarcode" name="barcode" class="form-control mb-3" placeholder="Barcode Number (Optional)" autocomplete="off">
+                        <button type="submit" class="btn btn-success w-100 fw-bold">Save Medicine</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addSupplierModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fas fa-building me-2"></i> Add New Supplier</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="supplierAjaxForm">
+                        {% csrf_token %}
+                        <input type="text" id="newSupName" class="form-control mb-2" placeholder="Supplier Name" required>
+                        <input type="text" id="newSupPhone" class="form-control mb-2" placeholder="Phone Number">
+                        <input type="email" id="newSupEmail" class="form-control mb-2" placeholder="Email Address">
+                        <textarea id="newSupAddress" class="form-control mb-3" rows="2" placeholder="Full Address"></textarea>
+                        <button type="submit" class="btn btn-success w-100 fw-bold">Save Supplier</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Grab the CSRF token from the main form to secure the AJAX requests
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+        // ----------------------------------------------------
+        // 1. BARCODE SCANNER TRAP
+        // ----------------------------------------------------
+        // Hardware scanners simulate an 'Enter' key press after scanning.
+        // This prevents the 'Enter' key from prematurely submitting the AJAX form.
+        document.getElementById('newMedBarcode').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                // Move focus to the Save button so the user can just hit Enter again to submit
+                document.querySelector('#medicineAjaxForm button[type="submit"]').focus(); 
+            }
+        });
+
+        // ----------------------------------------------------
+        // 2. MEDICINE AJAX SUBMISSION
+        // ----------------------------------------------------
+        document.getElementById('medicineAjaxForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Stop full page reload
+            
+            let formData = new FormData();
+            formData.append('name', document.getElementById('newMedName').value);
+            formData.append('category', document.getElementById('newMedCat').value);
+            formData.append('manufacturer', document.getElementById('newMedMfg').value);
+            formData.append('minimum_stock_level', document.getElementById('newMedMinStock').value);
+            formData.append('gst_percentage', document.getElementById('newMedGST').value);
+            formData.append('barcode', document.getElementById('newMedBarcode').value);
+
+            fetch("{% url 'ajax_add_medicine' %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": csrfToken },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    // Add the new medicine to the dropdown and automatically select it
+                    let select = document.getElementById('medicineSelect');
+                    select.add(new Option(data.name, data.id, true, true));
+                    
+                    // Close the modal and reset the form inputs
+                    bootstrap.Modal.getInstance(document.getElementById('addMedicineModal')).hide();
+                    document.getElementById('medicineAjaxForm').reset();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            });
+        });
+
+        // ----------------------------------------------------
+        // 3. SUPPLIER AJAX SUBMISSION
+        // ----------------------------------------------------
+        document.getElementById('supplierAjaxForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Stop full page reload
+            
+            let formData = new FormData();
+            formData.append('name', document.getElementById('newSupName').value);
+            formData.append('phone', document.getElementById('newSupPhone').value);
+            formData.append('email', document.getElementById('newSupEmail').value);
+            formData.append('address', document.getElementById('newSupAddress').value);
+
+            fetch("{% url 'ajax_add_supplier' %}", {
+                method: "POST",
+                headers: { "X-CSRFToken": csrfToken },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    // Add the new supplier to the dropdown and automatically select it
+                    let select = document.getElementById('supplierSelect');
+                    select.add(new Option(data.name, data.id, true, true));
+                    
+                    // Close the modal and reset the form inputs
+                    bootstrap.Modal.getInstance(document.getElementById('addSupplierModal')).hide();
+                    document.getElementById('supplierAjaxForm').reset();
+                } else {
+                    alert("Error: " + data.error);
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
