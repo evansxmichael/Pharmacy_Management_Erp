@@ -39,21 +39,26 @@
 
 <div class="container-fluid mt-4 px-4">
     
-    <div class="dashboard-header d-flex justify-content-between align-items-center shadow-sm">
+    <div class="dashboard-header d-flex justify-content-between align-items-center flex-wrap gap-2 shadow-sm">
         <h2 class="mb-0"><i class="fas fa-boxes me-2"></i>Inventory Command Center</h2>
-        <div>
-            <a href="?export=po" class="btn btn-warning text-dark fw-bold shadow-sm me-2" title="Download Reorder List">
+        <div class="d-flex align-items-center flex-wrap gap-2">
+            <a href="?export=po" class="btn btn-warning text-dark fw-bold shadow-sm" title="Download Reorder List">
                 <i class="fas fa-file-invoice me-1"></i> Export Reorder List
             </a>
-            <a href="{% url 'add_stock' %}" class="btn btn-success fw-bold shadow-sm me-2">
+            <a href="{% url 'add_stock' %}" class="btn btn-success fw-bold shadow-sm">
                 <i class="fas fa-plus-circle me-1"></i> Add Stock
             </a>
-            <a href="{% url 'analytics' %}" class="btn btn-outline-light me-2">
+            <a href="{% url 'analytics' %}" class="btn btn-outline-light">
                 <i class="fas fa-chart-line me-1"></i> Analytics
             </a>
             <a href="{% url 'billing' %}" class="btn btn-outline-light">
                 <i class="fas fa-cash-register me-1"></i> Go to POS
             </a>
+            {% if request.user.is_authenticated %}
+                <a href="{% url 'logout' %}" class="btn btn-danger fw-bold shadow-sm" title="Log Out">
+                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                </a>
+            {% endif %}
         </div>
     </div>
 

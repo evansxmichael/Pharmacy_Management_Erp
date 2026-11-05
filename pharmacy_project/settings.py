@@ -2,7 +2,7 @@
 ==========================================
 MASTER SYSTEM CONFIGURATION (settings.py)
 ==========================================
-This is the Control Room of the XISHAAN Pharmacy project.
+This is the Control Room of the Pharmacy Management ERP project.
 It contains all the core configurations for the database, installed applications, 
 security middleware, and session management.
 

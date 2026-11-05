@@ -13,10 +13,15 @@
         
         <div class="d-flex justify-content-between align-items-center mb-4 bg-dark text-white p-3 rounded shadow-sm">
             <h3 class="mb-0 fw-bold"><i class="fas fa-truck-loading me-2"></i> Log New Purchase Invoice</h3>
-            <div>
+            <div class="d-flex align-items-center gap-2">
                 <a href="{% url 'inventory' %}" class="btn btn-outline-light">
                     <i class="fas fa-arrow-left me-1"></i> Back to Inventory
                 </a>
+                {% if request.user.is_authenticated %}
+                    <a href="{% url 'logout' %}" class="btn btn-danger fw-bold shadow-sm" title="Log Out">
+                        <i class="fas fa-sign-out-alt me-1"></i> Logout
+                    </a>
+                {% endif %}
             </div>
         </div>
 

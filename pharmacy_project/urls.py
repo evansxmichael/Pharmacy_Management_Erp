@@ -17,8 +17,7 @@ urlpatterns = [
     # ==========================================
     # 1. DJANGO ADMIN PANEL
     # ==========================================
-    # Secure backdoor for the Superuser/Boss to directly access the database.
-    path('xishaan_secure_vault_99/', admin.site.urls),
+    path('admin/', admin.site.urls),
     
     # ==========================================
     # 2. MAIN PHARMACY APPLICATION
@@ -27,3 +26,8 @@ urlpatterns = [
     # and forwards it to the 'store/urls.py' file to handle the specific pages.
     path('', include('store.urls')), 
 ]
+
+# Admin Panel Custom Branding
+admin.site.site_header = "Pharmacy Management ERP"
+admin.site.site_title = "Pharmacy Management ERP"
+admin.site.index_title = "Pharmacy ERP Administration"

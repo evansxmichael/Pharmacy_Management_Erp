@@ -459,7 +459,7 @@ def analytics_dashboard(request):
 
     if request.GET.get('export') == 'csv':
         response = HttpResponse(content_type='text/csv')
-        filename = f"Xishaan_Pharmacy_Sales_{start_date.strftime('%Y%m%d')}_to_{end_date.strftime('%Y%m%d')}.csv"
+        filename = f"Pharmacy_ERP_Sales_{start_date.strftime('%Y%m%d')}_to_{end_date.strftime('%Y%m%d')}.csv"
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         
         writer = csv.writer(response)
@@ -517,6 +517,7 @@ def login_view(request):
 
 def logout_view(request):
     auth_logout(request)
+    messages.success(request, "You have been logged out safely.")
     return redirect('login')
 
 
