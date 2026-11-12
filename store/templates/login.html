@@ -10,10 +10,12 @@
     <style>
         body { 
             background-color: #f4f7f6; 
-            height: 100vh; 
+            min-height: 100vh; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
+            padding: 20px 12px;
+            margin: 0;
         }
         .login-card { 
             border: none; 
@@ -35,12 +37,20 @@
             padding: 50px; 
             background: white; 
         }
+        @media (max-width: 767.98px) {
+            body {
+                padding: 15px 10px;
+            }
+            .login-right {
+                padding: 30px 20px;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card login-card flex-row shadow-lg">
+<div class="container px-2 px-sm-3">
+    <div class="card login-card flex-column flex-md-row shadow-lg">
         
         <div class="col-md-5 login-left d-none d-md-flex">
             <h2><i class="fas fa-heartbeat me-2"></i>Pharmacy ERP</h2>
@@ -51,8 +61,15 @@
             </div>
         </div>
         
-        <div class="col-md-7 login-right">
-            <h3 class="fw-bold mb-4">Account Login</h3>
+        <div class="col-md-7 login-right w-100">
+            <!-- Mobile Brand Banner -->
+            <div class="d-md-none text-center mb-4">
+                <h3 class="fw-bold mb-1" style="color: #008B8B;"><i class="fas fa-heartbeat me-2"></i>Pharmacy ERP</h3>
+                <p class="text-muted small mb-0">Enterprise Pharmacy Management</p>
+                <hr class="my-3 opacity-25">
+            </div>
+
+            <h3 class="fw-bold mb-4 text-center text-md-start">Account Login</h3>
             
             {% if messages %}
                 {% for message in messages %}
