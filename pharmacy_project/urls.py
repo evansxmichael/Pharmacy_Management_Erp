@@ -12,12 +12,14 @@ to the 'store' app's internal URL configuration.
 
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 urlpatterns = [
     # ==========================================
-    # 1. DJANGO ADMIN PANEL
+    # 1. DJANGO ADMIN PANEL (Custom Secured URL)
     # ==========================================
-    path('admin/', admin.site.urls),
+    path('xishaan_secure_vault_99/', admin.site.urls),
+    path('admin/', RedirectView.as_view(url='/xishaan_secure_vault_99/', permanent=False)),
     
     # ==========================================
     # 2. MAIN PHARMACY APPLICATION
